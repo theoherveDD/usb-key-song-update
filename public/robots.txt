@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+  <!-- This file prevents search engine indexing -->
+</body>
+</html>

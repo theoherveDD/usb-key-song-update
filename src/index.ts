@@ -31,15 +31,23 @@ app.use('/api', createApiRouter(db, downloadService, syncService, driveMonitor))
 
 // Serve static HTML pages
 app.get('/', (req, res) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow');
   res.send(getHomePage());
 });
 
 app.get('/settings', (req, res) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow');
   res.send(getSettingsPage());
 });
 
 app.get('/connect', (req, res) => {
+  res.set('X-Robots-Tag', 'noindex, nofollow');
   res.send(getConnectPage());
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send('User-agent: *\nDisallow: /');
 });
 
 function getHomePage() {
@@ -50,6 +58,7 @@ function getHomePage() {
         <title>USB Key Song Update</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="robots" content="noindex, nofollow">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -257,6 +266,7 @@ function getSettingsPage() {
         <title>Settings - USB Key Song Update</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="robots" content="noindex, nofollow">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { 
@@ -864,6 +874,7 @@ function getConnectPage() {
         <title>Connect Services - USB Key Song Update</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="robots" content="noindex, nofollow">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }

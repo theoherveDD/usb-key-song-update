@@ -104,10 +104,14 @@ pm2 stop usb-key-song-update
 
 ## 🌐 URLs
 
-- Dashboard : https://theoherve.fr/
-- Connect : https://theoherve.fr/connect  
-- Settings : https://theoherve.fr/settings
-- API : https://theoherve.fr/api/health
+- Dashboard : https://theoherve.fr/usb-key-song-update/
+- Connect : https://theoherve.fr/usb-key-song-update/connect  
+- Settings : https://theoherve.fr/usb-key-song-update/settings
+- API : https://theoherve.fr/usb-key-song-update/api/health
+
+**Note** : L'app est dans `/usb-key-song-update/` pour ne pas interférer avec votre portfolio.
+
+**SEO** : L'application n'est pas indexée par les moteurs de recherche (no-index configuré).
 
 ---
 

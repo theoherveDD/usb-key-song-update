@@ -1,0 +1,18 @@
+# Prevent search engine indexing
+Header set X-Robots-Tag "noindex, nofollow"
+
+# Proxy to Node.js application
+RewriteEngine On
+RewriteBase /usb-key-song-update/
+
+# Serve robots.txt
+RewriteRule ^robots\.txt$ - [L]
+
+# Proxy all other requests to Node.js
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+
+# Security headers
+Header always set X-Frame-Options "DENY"
+Header always set X-Content-Type-Options "nosniff"

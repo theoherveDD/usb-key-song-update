@@ -123,14 +123,14 @@ RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
 EOF
 ```
 
-### 4. Mettre à Jour Spotify Developer (2 minutes)
+### 3. Mettre à Jour Spotify Developer (2 minutes)
 
 1. Allez sur https://developer.spotify.com/dashboard
 2. Ouvrez votre application
 3. Cliquez "Edit Settings"
 4. Dans "Redirect URIs", ajoutez :
    ```
-   https://theoherve.fr/api/spotify/callback
+   https://theoherve.fr/usb-key-song-update/api/spotify/callback
    ```
 5. Cliquez "Save"
 
@@ -138,10 +138,28 @@ EOF
 
 ```bash
 # Depuis votre navigateur
-https://theoherve.fr/
+https://theoherve.fr/usb-key-song-update/
 
 # Vous devriez voir la page d'accueil !
 ```
+
+## ⚠️ IMPORTANT : Configuration du Sous-dossier
+
+L'application est installée dans `/usb-key-song-update/` pour ne pas interférer avec votre portfolio principal.
+
+### URLs de l'application :
+
+- Dashboard : `https://theoherve.fr/usb-key-song-update/`
+- Connect : `https://theoherve.fr/usb-key-song-update/connect`
+- Settings : `https://theoherve.fr/usb-key-song-update/settings`
+- API : `https://theoherve.fr/usb-key-song-update/api/health`
+
+### SEO : No-Index
+
+✅ L'application est configurée pour **ne pas être indexée** par les moteurs de recherche :
+- Meta tag `<meta name="robots" content="noindex, nofollow">` sur toutes les pages
+- Header HTTP `X-Robots-Tag: noindex, nofollow`
+- `robots.txt` avec `Disallow: /`
 
 ## 🔄 Pour les Mises à Jour Futures
 
@@ -185,9 +203,46 @@ pm2 status
 pm2 logs usb-key-song-update
 
 # Depuis votre navigateur
-https://theoherve.fr/
-https://theoherve.fr/connect
-https://theoherve.fr/api/health
+https://theoherve.fr/usb-key-song-update/
+https://theoherve.fr/usb-key-song-update/connect
+https://theoherve.fr/usb-key-song-update/api/health
+```
+
+## 🔒 Configuration Apache/Nginx
+
+### Si vous avez Apache
+
+Créez `~/www/usb-key-song-update/.htaccess` (déjà fourni dans le projet) :
+
+```apache
+# Prevent search engine indexing
+Header set X-Robots-Tag "noindex, nofollow"
+
+# Proxy to Node.js
+RewriteEngine On
+RewriteBase /usb-key-song-update/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+```
+
+### Si vous avez Nginx
+
+Ajoutez dans votre configuration Nginx :
+
+```nginx
+location /usb-key-song-update/ {
+    proxy_pass http://localhost:3000/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    
+    # No-index headers
+    add_header X-Robots-Tag "noindex, nofollow" always;
+}
 ```
 
 ## 🐛 Problèmes Courants
@@ -240,13 +295,15 @@ Si vous avez des problèmes :
    npm start
    ```
 
-## ✨ Une Fois Déployé
+### ✨ Une Fois Déployé
 
 Vous pourrez :
-- ✅ Accéder à l'app depuis https://theoherve.fr
+- ✅ Accéder à l'app depuis `https://theoherve.fr/usb-key-song-update/`
 - ✅ Connecter Spotify en 1 clic
 - ✅ Gérer vos téléchargements
 - ✅ Mettre à jour en 30 secondes avec `git push`
+- ✅ Votre portfolio reste sur `https://theoherve.fr/`
+- ✅ L'app n'est **pas indexée** par Google (no-index)
 
 ---
 
