@@ -1,18 +1,22 @@
-# Prevent search engine indexing
-Header set X-Robots-Tag "noindex, nofollow"
+# Configuration de base
+Options +FollowSymLinks -Indexes
+DirectoryIndex index.html index.php
 
-# Proxy to Node.js application
-RewriteEngine On
-RewriteBase /usb-key-song-update/
+# Autoriser l'accès
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
 
-# Serve robots.txt
-RewriteRule ^robots\.txt$ - [L]
+# Pour Apache 2.2
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
 
-# Proxy all other requests to Node.js
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
-
-# Security headers
-Header always set X-Frame-Options "DENY"
-Header always set X-Content-Type-Options "nosniff"
+# Headers de sécurité
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>
