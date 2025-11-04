@@ -31,23 +31,15 @@ app.use('/api', createApiRouter(db, downloadService, syncService, driveMonitor))
 
 // Serve static HTML pages
 app.get('/', (req, res) => {
-  res.set('X-Robots-Tag', 'noindex, nofollow');
   res.send(getHomePage());
 });
 
 app.get('/settings', (req, res) => {
-  res.set('X-Robots-Tag', 'noindex, nofollow');
   res.send(getSettingsPage());
 });
 
 app.get('/connect', (req, res) => {
-  res.set('X-Robots-Tag', 'noindex, nofollow');
   res.send(getConnectPage());
-});
-
-app.get('/robots.txt', (req, res) => {
-  res.type('text/plain');
-  res.send('User-agent: *\nDisallow: /');
 });
 
 function getHomePage() {
@@ -58,7 +50,6 @@ function getHomePage() {
         <title>USB Key Song Update</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="robots" content="noindex, nofollow">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -266,7 +257,6 @@ function getSettingsPage() {
         <title>Settings - USB Key Song Update</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="robots" content="noindex, nofollow">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { 
@@ -610,19 +600,6 @@ function getSettingsPage() {
                 <input type="password" id="soundcloudToken" name="soundcloudToken">
                 <div class="password-hint">Leave empty to keep current value</div>
               </div>
-
-              <h3>🎼 Beatport</h3>
-              <div class="grid-2">
-                <div class="form-group">
-                  <label for="beatportUsername">Username</label>
-                  <input type="text" id="beatportUsername" name="beatportUsername">
-                </div>
-                <div class="form-group">
-                  <label for="beatportPassword">Password</label>
-                  <input type="password" id="beatportPassword" name="beatportPassword">
-                  <div class="password-hint">Leave empty to keep current value</div>
-                </div>
-              </div>
             </div>
 
             <div class="card">
@@ -688,7 +665,6 @@ function getSettingsPage() {
               document.getElementById('spotifyClientId').value = cfg.spotify?.clientId || '';
               // Don't display password values for security
               document.getElementById('tidalClientId').value = cfg.tidal?.clientId || '';
-              document.getElementById('beatportUsername').value = cfg.beatport?.username || '';
 
               document.getElementById('checkInterval').value = cfg.monitoring?.checkInterval || 30;
               document.getElementById('autoSync').value = cfg.monitoring?.autoSyncEnabled ? 'true' : 'false';
@@ -720,9 +696,6 @@ function getSettingsPage() {
                 clientId: formData.get('tidalClientId')
               },
               soundcloud: {},
-              beatport: {
-                username: formData.get('beatportUsername')
-              },
               monitoring: {
                 checkInterval: parseInt(formData.get('checkInterval')),
                 autoSyncEnabled: formData.get('autoSync') === 'true'
@@ -741,9 +714,6 @@ function getSettingsPage() {
             }
             if (formData.get('soundcloudToken')) {
               config.soundcloud.authToken = formData.get('soundcloudToken');
-            }
-            if (formData.get('beatportPassword')) {
-              config.beatport.password = formData.get('beatportPassword');
             }
 
             try {
@@ -874,7 +844,6 @@ function getConnectPage() {
         <title>Connect Services - USB Key Song Update</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="robots" content="noindex, nofollow">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }

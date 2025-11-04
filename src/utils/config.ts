@@ -33,7 +33,7 @@ const defaultConfig: AppConfig = {
     authToken: process.env.SOUNDCLOUD_AUTH_TOKEN || ''
   },
   beatport: {
-    username: process.env.BEATPORT_USERNAME || '',
+    username: process.env.BEATPORT_EMAIL || '',
     password: process.env.BEATPORT_PASSWORD || ''
   },
   monitoring: {
@@ -63,7 +63,17 @@ function loadConfig(): AppConfig {
 export function saveConfig(newConfig: Partial<AppConfig>): void {
   try {
     const currentConfig = loadConfig();
-    const updatedConfig = { ...currentConfig, ...newConfig };
+    
+    // Merge new config but preserve Beatport credentials from environment
+    const updatedConfig = { 
+      ...currentConfig, 
+      ...newConfig,
+      // Always use Beatport credentials from environment, don't save them to config.json
+      beatport: {
+        username: process.env.BEATPORT_EMAIL || '',
+        password: process.env.BEATPORT_PASSWORD || ''
+      }
+    };
     
     // Ensure data directory exists
     const dataDir = path.dirname(CONFIG_FILE);
