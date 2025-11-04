@@ -33,7 +33,7 @@ const defaultConfig: AppConfig = {
     authToken: process.env.SOUNDCLOUD_AUTH_TOKEN || ''
   },
   beatport: {
-    username: process.env.BEATPORT_EMAIL || '',
+    username: process.env.BEATPORT_USERNAME || '',
     password: process.env.BEATPORT_PASSWORD || ''
   },
   monitoring: {
@@ -70,7 +70,7 @@ export function saveConfig(newConfig: Partial<AppConfig>): void {
       ...newConfig,
       // Always use Beatport credentials from environment, don't save them to config.json
       beatport: {
-        username: process.env.BEATPORT_EMAIL || '',
+        username: process.env.BEATPORT_USERNAME || '',
         password: process.env.BEATPORT_PASSWORD || ''
       }
     };
