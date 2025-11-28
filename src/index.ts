@@ -42,6 +42,10 @@ app.get('/connect', (req, res) => {
   res.send(getConnectPage());
 });
 
+app.get('/spotify-likes', (req, res) => {
+  res.send(getSpotifyLikesPage());
+});
+
 function getHomePage() {
   return `
     <!DOCTYPE html>
@@ -146,6 +150,7 @@ function getHomePage() {
             <p class="subtitle">Automated DJ music library management system</p>
             <nav>
               <a href="/">Dashboard</a>
+              <a href="/spotify-likes">🎵 Spotify Likes</a>
               <a href="/connect">🔌 Connect</a>
               <a href="/settings">⚙️ Settings</a>
             </nav>
@@ -1184,9 +1189,452 @@ function getConnectPage() {
   `;
 }
 
+function getSpotifyLikesPage() {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Spotify Library - USB Key Song Update</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+          }
+          .container { max-width: 900px; margin: 0 auto; }
+          header { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+          }
+          h1 { 
+            color: #333; 
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .spotify-icon { color: #1DB954; font-size: 32px; }
+          .subtitle { color: #666; font-size: 14px; margin-top: 10px; }
+          nav { margin-top: 20px; }
+          nav a { 
+            color: #667eea; 
+            text-decoration: none; 
+            margin-right: 20px; 
+            font-weight: 600;
+          }
+          nav a:hover { text-decoration: underline; }
+          .card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+          }
+          h2 { color: #333; margin-bottom: 20px; font-size: 24px; }
+          .description {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.6;
+          }
+          .big-download-btn {
+            background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 20px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 20px rgba(29, 185, 84, 0.4);
+          }
+          .big-download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(29, 185, 84, 0.6);
+          }
+          .big-download-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+          }
+          .big-download-btn i {
+            font-size: 24px;
+          }
+          .progress-container {
+            margin-top: 30px;
+            display: none;
+          }
+          .progress-container.visible {
+            display: block;
+          }
+          .progress-bar-wrapper {
+            background: #f0f0f0;
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .progress-bar {
+            background: linear-gradient(90deg, #1DB954 0%, #1ed760 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+          }
+          .progress-info {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+          }
+          .current-track {
+            color: #333;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 14px;
+            min-height: 20px;
+          }
+          .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+          }
+          .stat-box {
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+          }
+          .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+          }
+          .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+          }
+          .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+          }
+          .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+          }
+          .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <header>
+            <h1>
+              <i class="fab fa-spotify spotify-icon"></i>
+              Download Your Complete Spotify Library
+            </h1>
+            <p class="subtitle">One-click download of all your liked tracks and playlists</p>
+            <nav>
+              <a href="/"><i class="fas fa-home"></i> Home</a>
+              <a href="/connect"><i class="fas fa-plug"></i> Connect Services</a>
+              <a href="/settings"><i class="fas fa-cog"></i> Settings</a>
+            </nav>
+          </header>
+
+          <div id="alerts"></div>
+
+          <div class="card">
+            <h2>🎵 Your Complete Music Library</h2>
+            <div class="description">
+              This will download ALL your liked tracks and tracks from ALL your playlists.<br>
+              First tries Beatport (Extended Mix), then falls back to Tidal if not found.
+            </div>
+
+            <button class="big-download-btn" id="downloadBtn" onclick="downloadAll()">
+              <i class="fas fa-download"></i>
+              Download Entire Library
+            </button>
+
+            <div class="progress-container" id="progressContainer">
+              <div class="progress-info">
+                <strong>Downloading your library...</strong>
+              </div>
+              
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar" id="progressBar">0%</div>
+              </div>
+
+              <div class="stats">
+                <div class="stat-box">
+                  <div class="stat-value" id="completedCount">0</div>
+                  <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value" id="totalCount">0</div>
+                  <div class="stat-label">Total Tracks</div>
+                </div>
+                <div class="stat-box">
+                  <div class="stat-value" id="errorCount">0</div>
+                  <div class="stat-label">Errors</div>
+                </div>
+              </div>
+
+              <div class="current-track" id="currentTrack"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>📋 Download a Single Playlist</h2>
+            <div class="description">
+              Paste a Spotify playlist link to download all tracks from that playlist only.
+            </div>
+
+            <div style="max-width: 600px; margin: 0 auto;">
+              <div style="display: flex; gap: 10px; align-items: stretch;">
+                <input 
+                  type="text" 
+                  id="playlistUrlInput" 
+                  placeholder="https://open.spotify.com/playlist/..." 
+                  style="flex: 1; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px;"
+                  onkeypress="if(event.key === 'Enter') downloadPlaylist()"
+                />
+                <button 
+                  class="big-download-btn" 
+                  id="playlistDownloadBtn" 
+                  onclick="downloadPlaylist()"
+                  style="padding: 15px 30px; box-shadow: 0 3px 15px rgba(102, 126, 234, 0.4); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+                >
+                  <i class="fas fa-download"></i>
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          let progressInterval;
+
+          async function downloadAll() {
+            const btn = document.getElementById('downloadBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const alertsDiv = document.getElementById('alerts');
+
+            if (!confirm('This will download your entire Spotify library. This may take several hours depending on your library size. Continue?')) {
+              return;
+            }
+
+            try {
+              btn.disabled = true;
+              btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+              alertsDiv.innerHTML = '';
+
+              const res = await fetch('/api/spotify/download-all', {
+                method: 'POST'
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                throw new Error(data.error || 'Failed to start download');
+              }
+
+              alertsDiv.innerHTML = \`
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i>
+                  <strong>Download Started!</strong> Your library is being downloaded in the background.
+                </div>
+              \`;
+
+              progressContainer.classList.add('visible');
+              btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+
+              // Start polling for progress
+              progressInterval = setInterval(updateProgress, 2000);
+
+            } catch (error) {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fas fa-download"></i> Download Entire Library';
+              
+              alertsDiv.innerHTML = \`
+                <div class="alert alert-error">
+                  <i class="fas fa-exclamation-circle"></i>
+                  <strong>Error:</strong> \${error.message}
+                </div>
+              \`;
+            }
+          }
+
+          async function updateProgress() {
+            try {
+              const res = await fetch('/api/download/progress');
+              const progress = await res.json();
+
+              const progressBar = document.getElementById('progressBar');
+              const completedCount = document.getElementById('completedCount');
+              const totalCount = document.getElementById('totalCount');
+              const errorCount = document.getElementById('errorCount');
+              const currentTrack = document.getElementById('currentTrack');
+              const btn = document.getElementById('downloadBtn');
+
+              const percentage = progress.totalTracks > 0 
+                ? Math.round((progress.completedTracks / progress.totalTracks) * 100)
+                : 0;
+
+              progressBar.style.width = percentage + '%';
+              progressBar.textContent = percentage + '%';
+
+              completedCount.textContent = progress.completedTracks;
+              totalCount.textContent = progress.totalTracks;
+              errorCount.textContent = progress.errors;
+              currentTrack.textContent = progress.currentTrack || 'Initializing...';
+
+              // Check if download is complete
+              if (!progress.isDownloading && progress.totalTracks > 0) {
+                clearInterval(progressInterval);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Download Complete!';
+                btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+
+                const alertsDiv = document.getElementById('alerts');
+                alertsDiv.innerHTML = \`
+                  <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>Success!</strong> Downloaded \${progress.completedTracks} tracks with \${progress.errors} errors.
+                  </div>
+                \`;
+              }
+
+            } catch (error) {
+              console.error('Failed to update progress:', error);
+            }
+          }
+
+          async function downloadPlaylist() {
+            const input = document.getElementById('playlistUrlInput');
+            const btn = document.getElementById('playlistDownloadBtn');
+            const alertsDiv = document.getElementById('alerts');
+            const playlistUrl = input.value.trim();
+
+            if (!playlistUrl) {
+              alertsDiv.innerHTML = \`
+                <div class="alert alert-error">
+                  <i class="fas fa-exclamation-circle"></i>
+                  <strong>Error:</strong> Please enter a Spotify playlist URL
+                </div>
+              \`;
+              return;
+            }
+
+            // Validate Spotify playlist URL
+            if (!playlistUrl.includes('spotify.com/playlist/')) {
+              alertsDiv.innerHTML = \`
+                <div class="alert alert-error">
+                  <i class="fas fa-exclamation-circle"></i>
+                  <strong>Error:</strong> Invalid Spotify playlist URL. Example: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+                </div>
+              \`;
+              return;
+            }
+
+            try {
+              btn.disabled = true;
+              btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+              alertsDiv.innerHTML = '';
+
+              const res = await fetch('/api/spotify/download-playlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playlistUrl })
+              });
+
+              const data = await res.json();
+
+              if (!res.ok) {
+                throw new Error(data.error || 'Failed to start playlist download');
+              }
+
+              alertsDiv.innerHTML = \`
+                <div class="alert alert-success">
+                  <i class="fas fa-check-circle"></i>
+                  <strong>Playlist download started!</strong> Downloading \${data.totalTracks} tracks...
+                </div>
+              \`;
+
+              document.getElementById('progressContainer').classList.add('visible');
+              
+              // Start polling for progress
+              if (progressInterval) clearInterval(progressInterval);
+              progressInterval = setInterval(updateProgress, 2000);
+
+              // Reset input
+              input.value = '';
+              
+              // Re-enable button after 3 seconds
+              setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download';
+              }, 3000);
+
+            } catch (error) {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fas fa-download"></i> Download';
+              
+              alertsDiv.innerHTML = \`
+                <div class="alert alert-error">
+                  <i class="fas fa-exclamation-circle"></i>
+                  <strong>Error:</strong> \${error.message}
+                </div>
+              \`;
+            }
+          }
+
+          // Check if there's already a download in progress on page load
+          updateProgress();
+        </script>
+      </body>
+    </html>
+  `;
+}
+
 // Start server
 app.listen(port, () => {
-  logger.info(`Web interface running at http://localhost:${port}`);
+  logger.info(`Web interface running at http://localhost:3000`);
+  logger.info(`Also accessible at http://127.0.0.1:3000`);
   logger.info('API available at /api');
   
   // Start drive monitoring

@@ -23,6 +23,7 @@ export class AppDatabase {
         download_path TEXT,
         status TEXT NOT NULL,
         mix_type TEXT,
+        genres TEXT,
         downloaded_at INTEGER,
         synced_at INTEGER,
         file_size INTEGER,
@@ -49,7 +50,26 @@ export class AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_tracks_downloaded_at ON tracks(downloaded_at);
     `);
 
+    // Migration: Add genres column if it doesn't exist
+    this.migrateDatabase();
+
     logger.info('Database schema initialized');
+  }
+
+  private migrateDatabase(): void {
+    try {
+      // Check if genres column exists
+      const tableInfo = this.db.pragma('table_info(tracks)') as Array<{ name: string }>;
+      const hasGenresColumn = tableInfo.some((col) => col.name === 'genres');
+
+      if (!hasGenresColumn) {
+        logger.info('Adding genres column to tracks table');
+        this.db.exec('ALTER TABLE tracks ADD COLUMN genres TEXT');
+        logger.info('Migration completed: genres column added');
+      }
+    } catch (error: any) {
+      logger.error('Migration failed', { error: error.message });
+    }
   }
 
   // Track operations
@@ -60,9 +80,9 @@ export class AppDatabase {
     const stmt = this.db.prepare(`
       INSERT INTO tracks (
         id, source_platform, download_platform, title, artist, platform_id, platform_url,
-        download_path, status, mix_type, downloaded_at, synced_at, file_size,
+        download_path, status, mix_type, genres, downloaded_at, synced_at, file_size,
         duration, metadata, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -76,6 +96,7 @@ export class AppDatabase {
       track.downloadPath || null,
       track.status,
       track.mixType || null,
+      track.genres ? JSON.stringify(track.genres) : null,
       track.downloadedAt?.getTime() || null,
       track.syncedAt?.getTime() || null,
       track.fileSize || null,
@@ -210,6 +231,7 @@ export class AppDatabase {
       downloadPath: row.download_path,
       status: row.status as DownloadStatus,
       mixType: row.mix_type,
+      genres: row.genres ? JSON.parse(row.genres) : undefined,
       downloadedAt: row.downloaded_at ? new Date(row.downloaded_at) : undefined,
       syncedAt: row.synced_at ? new Date(row.synced_at) : undefined,
       fileSize: row.file_size,

@@ -7,6 +7,7 @@ import { SyncService } from '../services/SyncService';
 import { DriveMonitorService } from '../services/DriveMonitorService';
 import { SpotifyService } from '../services/SpotifyService';
 import { TidalService } from '../services/TidalService';
+import { GenreRefinementService } from '../services/GenreRefinementService';
 import { logger } from '../utils/logger';
 import { config, saveConfig, getSanitizedConfig } from '../utils/config';
 import { AppConfig } from '../types';
@@ -20,6 +21,7 @@ export function createApiRouter(
   const router = Router();
   const spotifyService = new SpotifyService();
   const tidalService = new TidalService();
+  const genreRefinementService = new GenreRefinementService(db);
 
   router.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -128,7 +130,7 @@ export function createApiRouter(
   router.get('/spotify/auth', (req: Request, res: Response) => {
     try {
       const authUrl = spotifyService.getAuthorizationUrl();
-      logger.info('Generated Spotify authorization URL');
+      logger.info('Generated Spotify authorization URL', { authUrl });
       res.json({ authUrl });
     } catch (error: any) {
       logger.error('Error generating Spotify auth URL', { error: error.message });
@@ -189,6 +191,107 @@ export function createApiRouter(
     } catch (error: any) {
       logger.error('Error disconnecting Spotify', { error: error.message });
       res.status(500).json({ error: 'Failed to disconnect Spotify' });
+    }
+  });
+
+  router.get('/spotify/liked', async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const tracks = await spotifyService.getLikedTracks(limit);
+      res.json({ tracks });
+    } catch (error: any) {
+      logger.error('Error fetching Spotify liked tracks', { error: error.message });
+      res.status(500).json({ error: 'Failed to fetch Spotify liked tracks' });
+    }
+  });
+
+  router.post('/spotify/download-track', async (req: Request, res: Response) => {
+    try {
+      const { trackId, artist, title } = req.body;
+      
+      if (!artist || !title) {
+        return res.status(400).json({ error: 'Artist and title are required' });
+      }
+
+      // Start download in background
+      downloadService.downloadTrackFromSpotify(artist, title, trackId).catch((err: any) => {
+        logger.error('Background download failed', { error: err.message });
+      });
+
+      res.json({ message: 'Download started', artist, title });
+    } catch (error: any) {
+      logger.error('Error starting track download', { error: error.message });
+      res.status(500).json({ error: 'Failed to start download' });
+    }
+  });
+
+  router.get('/spotify/playlists', async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const playlists = await spotifyService.getSavedPlaylists(limit);
+      res.json({ playlists });
+    } catch (error: any) {
+      logger.error('Error fetching Spotify playlists', { error: error.message });
+      res.status(500).json({ error: 'Failed to fetch Spotify playlists' });
+    }
+  });
+
+  router.post('/spotify/download-all', async (req: Request, res: Response) => {
+    try {
+      // Start download in background
+      downloadService.downloadAllFromSpotify().catch((err: any) => {
+        logger.error('Background download all failed', { error: err.message });
+      });
+
+      res.json({ message: 'Download all started - check progress via /api/download/progress' });
+    } catch (error: any) {
+      logger.error('Error starting download all', { error: error.message });
+      res.status(500).json({ error: 'Failed to start download all' });
+    }
+  });
+
+  router.post('/spotify/download-playlist', async (req: Request, res: Response) => {
+    try {
+      const { playlistUrl } = req.body;
+
+      if (!playlistUrl) {
+        return res.status(400).json({ error: 'Playlist URL is required' });
+      }
+
+      // Extract playlist ID from URL
+      const playlistIdMatch = playlistUrl.match(/playlist\/([a-zA-Z0-9]+)/);
+      if (!playlistIdMatch) {
+        return res.status(400).json({ error: 'Invalid Spotify playlist URL' });
+      }
+
+      const playlistId = playlistIdMatch[1];
+      logger.info(`Starting download for playlist: ${playlistId}`);
+
+      // Start download in background
+      downloadService.downloadPlaylistFromSpotify(playlistId).catch((err: any) => {
+        logger.error('Background playlist download failed', { error: err.message });
+      });
+
+      // Get playlist info for response
+      const tracks = await spotifyService.getPlaylistTracks(playlistId);
+
+      res.json({ 
+        message: 'Playlist download started - check progress via /api/download/progress',
+        totalTracks: tracks.length
+      });
+    } catch (error: any) {
+      logger.error('Error starting playlist download', { error: error.message });
+      res.status(500).json({ error: 'Failed to start playlist download' });
+    }
+  });
+
+  router.get('/download/progress', (req: Request, res: Response) => {
+    try {
+      const progress = downloadService.getDownloadProgress();
+      res.json(progress);
+    } catch (error: any) {
+      logger.error('Error fetching download progress', { error: error.message });
+      res.status(500).json({ error: 'Failed to fetch download progress' });
     }
   });
 
@@ -301,6 +404,82 @@ export function createApiRouter(
     } catch (error: any) {
       logger.error('Error browsing directory', { error: error.message });
       res.status(500).json({ error: 'Failed to browse directory' });
+    }
+  });
+
+  // ✅ NOUVEAUX ENDPOINTS : Genre refinement et reclassification
+  
+  /**
+   * POST /api/reclassify/other
+   * Re-scan et reclassifie tous les fichiers du dossier "Other"
+   */
+  router.post('/reclassify/other', async (req: Request, res: Response) => {
+    try {
+      logger.info('Manual reclassification of "Other" folder triggered via API');
+      
+      const results = await genreRefinementService.reclassifyOtherFolder();
+      
+      res.json({
+        message: 'Reclassification completed',
+        results: {
+          totalScanned: results.totalScanned,
+          reclassified: results.reclassified,
+          failed: results.failed,
+          details: results.details
+        }
+      });
+    } catch (error: any) {
+      logger.error('Error during reclassification', { error: error.message });
+      res.status(500).json({ error: 'Reclassification failed' });
+    }
+  });
+
+  /**
+   * POST /api/reclassify/all
+   * Re-scan et reclassifie tous les dossiers de genres
+   */
+  router.post('/reclassify/all', async (req: Request, res: Response) => {
+    try {
+      logger.info('Full library reclassification triggered via API');
+      
+      const results = await genreRefinementService.reclassifyAllFolders();
+      
+      res.json({
+        message: 'Full reclassification completed',
+        results
+      });
+    } catch (error: any) {
+      logger.error('Error during full reclassification', { error: error.message });
+      res.status(500).json({ error: 'Full reclassification failed' });
+    }
+  });
+
+  /**
+   * POST /api/enrich-genre
+   * Enrichir les genres d'un fichier spécifique
+   */
+  router.post('/enrich-genre', async (req: Request, res: Response) => {
+    try {
+      const { filePath } = req.body;
+      
+      if (!filePath) {
+        return res.status(400).json({ error: 'File path is required' });
+      }
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      const genres = await genreRefinementService.enrichFileGenre(filePath);
+      
+      res.json({
+        filePath,
+        genres,
+        message: genres.length > 0 ? 'Genres found' : 'No genres found'
+      });
+    } catch (error: any) {
+      logger.error('Error enriching genre', { error: error.message });
+      res.status(500).json({ error: 'Genre enrichment failed' });
     }
   });
 

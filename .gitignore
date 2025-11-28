@@ -40,3 +40,4 @@ tmp/
 temp/
 deploy_temp_*/
 deploy.tar.gz
+temp-downloads/

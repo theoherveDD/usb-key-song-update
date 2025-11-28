@@ -6,7 +6,8 @@ export enum StreamingPlatform {
 
 export enum DownloadPlatform {
   SOUNDCLOUD = 'soundcloud',
-  BEATPORT = 'beatport'
+  BEATPORT = 'beatport',
+  TIDAL = 'tidal'
 }
 
 export enum DownloadStatus {
@@ -28,6 +29,7 @@ export interface Track {
   downloadPath?: string;
   status: DownloadStatus;
   mixType?: string; // e.g., "Extended Mix", "Original Mix", null for SoundCloud
+  genres?: string[]; // Genres for organizing files by folder
   downloadedAt?: Date;
   syncedAt?: Date;
   fileSize?: number;
@@ -91,6 +93,11 @@ export interface SpotifyTrack {
   artists: { name: string }[];
   uri: string;
   addedAt: string;
+  genres?: string[]; // Artist genres from Spotify
+  album?: {
+    name: string;
+    releaseDate: string;
+  };
 }
 
 export interface TidalTrack {

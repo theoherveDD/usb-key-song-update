@@ -3,7 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import { AppConfig } from '../types';
 
-dotenv.config();
+// Charge .env.local en priorité (développement), sinon .env (production)
+const envFile = fs.existsSync(path.join(process.cwd(), '.env.local')) 
+  ? '.env.local' 
+  : '.env';
+console.log(`Loading environment from: ${envFile}`);
+dotenv.config({ path: envFile });
+console.log(`SPOTIFY_REDIRECT_URI: ${process.env.SPOTIFY_REDIRECT_URI}`);
 
 const CONFIG_FILE = path.join(process.cwd(), 'data', 'config.json');
 
@@ -22,7 +28,7 @@ const defaultConfig: AppConfig = {
   spotify: {
     clientId: process.env.SPOTIFY_CLIENT_ID || '',
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET || '',
-    redirectUri: process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/callback/spotify',
+    redirectUri: process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:3000/callback/spotify',
     refreshToken: process.env.SPOTIFY_REFRESH_TOKEN || ''
   },
   tidal: {
@@ -51,7 +57,26 @@ function loadConfig(): AppConfig {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
       const savedConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-      return { ...defaultConfig, ...savedConfig };
+      const merged = { ...defaultConfig, ...savedConfig };
+      
+      // IMPORTANT: Always prioritize environment variables over saved config
+      if (process.env.SPOTIFY_REDIRECT_URI) {
+        merged.spotify.redirectUri = process.env.SPOTIFY_REDIRECT_URI;
+      }
+      if (process.env.SPOTIFY_CLIENT_ID) {
+        merged.spotify.clientId = process.env.SPOTIFY_CLIENT_ID;
+      }
+      if (process.env.SPOTIFY_CLIENT_SECRET) {
+        merged.spotify.clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+      }
+      if (process.env.BEATPORT_USERNAME) {
+        merged.beatport.username = process.env.BEATPORT_USERNAME;
+      }
+      if (process.env.BEATPORT_PASSWORD) {
+        merged.beatport.password = process.env.BEATPORT_PASSWORD;
+      }
+      
+      return merged;
     }
   } catch (error) {
     console.error('Error loading config file:', error);
